@@ -1,4 +1,4 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import ComplexFilter from '../ComplexFilter';
 import SearchField from '../SearchField';
 import DynamicTable from '../DynamicTable';

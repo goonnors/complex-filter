@@ -1,11 +1,16 @@
 <template>
-    <span>
-        DynamicData
-    </span>
+    <div class="dynamic-options">
+        <ul>
+            <li v-for="item in items" :key="item.value">
+                {{ item.value }}
+            </li>
+        </ul>
+    </div>
 </template>
 
 <script>
     export default {
-        name: 'DynamicOptions'
+        name: 'DynamicOptions',
+        props: ['items']
     }
 </script>

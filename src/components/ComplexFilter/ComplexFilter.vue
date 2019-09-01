@@ -1,7 +1,15 @@
 <template>
-    <div v-click-outside="hideDynamicOptions">
-        <search-field class="search-field" @focus-search-field="onFocusSearchField" />
-        <dynamic-options class="dynamic-options" v-if="showDynamicOptions" />
+    <div>
+        <search-field
+            v-click-outside="''"
+            class="search-field"
+            @focus-search-field="onFocusSearchField"
+        />
+        <dynamic-options
+            v-if="showDynamicOptions"
+            v-click-outside="'search-field'"
+            :items="tableHeaders"
+        />
         <dynamic-table :headers="tableHeaders" :items="tableItems" />
     </div>
 </template>
@@ -16,9 +24,9 @@
 	Vue.directive('click-outside', {
 		bind: function (el, binding, vnode) {
 			el.clickOutsideEvent = event => {
-				const t = event.target;
-				if (!(el.contains(t) && (t.classList.contains('dynamic-options') || t.classList.contains('search-field')))) {
-					vnode.context[binding.expression](event);
+				const target = event.target;
+				if (!el.contains(target) && binding.value !== target.className) {
+                    vnode.context.hideDynamicOptions();
 				}
 			};
 			document.documentElement.addEventListener('click', el.clickOutsideEvent)

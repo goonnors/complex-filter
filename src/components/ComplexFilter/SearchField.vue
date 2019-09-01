@@ -2,8 +2,7 @@
     <textarea
         name="search-field"
         id="search-field"
-        cols="30"
-        rows="10"
+        rows="1"
         @focus="$emit('focus-search-field')"
     >
         ping
