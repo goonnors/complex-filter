@@ -3,7 +3,7 @@
         <ul>
             <li
                 v-for="item in items"
-                :key="item.value"
+                :key="item"
                 @click="onItemClick(item)"
             >{{ item }}</li>
         </ul>

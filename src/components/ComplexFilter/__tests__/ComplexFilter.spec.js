@@ -31,12 +31,12 @@ describe('ComplexFilter.vue', () => {
 		expect(wrapper.find(DynamicOptions).exists()).toBeTruthy();
 	});
 	
-	// test('should handle query when input textarea', () => {
-	// 	const wrapper = shallowMount(ComplexFilter);
-	// 	jest.spyOn(wrapper.vm, 'onInputSearchField');
-	// 	wrapper.find(SearchField).vm.$emit('input-search-field');
-	// 	expect(wrapper.vm.onInputSearchField).toHaveBeenCalled();
-	// });
+	test('should handle query when input textarea', () => {
+		const wrapper = shallowMount(ComplexFilter);
+		wrapper.setMethods({ onInputSearchField: jest.fn() });
+		wrapper.find(SearchField).vm.$emit('input-search-field');
+		expect(wrapper.vm.onInputSearchField).toHaveBeenCalled();
+	});
 	
 	test('should modify items', () => {
 		const wrapper = shallowMount(ComplexFilter);
@@ -52,5 +52,20 @@ describe('ComplexFilter.vue', () => {
 		wrapper.find(SearchField).vm.$emit('focus-search-field');
 		wrapper.find(DynamicOptions).vm.$emit('dynamic-option-click');
 		expect(wrapper.vm.onDynamicOptionClick).toHaveBeenCalled();
+	});
+	
+	test('should add item to query when click by DynamicOption', () => {
+		const wrapper = shallowMount(ComplexFilter);
+		const item = wrapper.vm.dynamicOptions[0];
+		expect(wrapper.vm.query).toBe('');
+		wrapper.vm.onDynamicOptionClick(item);
+		expect(wrapper.vm.query).toContain(item);
+	});
+	
+	test('should decrease list when click by DynamicOption', () => {
+		const wrapper = shallowMount(ComplexFilter);
+		const item = wrapper.vm.dynamicOptions[0];
+		wrapper.vm.onDynamicOptionClick(item);
+		expect(wrapper.vm.dynamicOptions).not.toContain(item);
 	});
 });

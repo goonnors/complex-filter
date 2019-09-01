@@ -14,11 +14,10 @@ describe('SearchField.vue', () => {
 		expect(wrapper.emitted('input-search-field')).toHaveLength(1);
 	});
 	
-	// test('shoud spy onInput method when emit input-search-field', () => {
-	// 	const wrapper = shallowMount(SearchField);
-	// 	// jest.spyOn(wrapper.vm, 'onInputSearchField');
-	// 	wrapper.vm.onInputSearchField = jest.fn();
-	// 	wrapper.find('textarea').trigger('input');
-	// 	expect(wrapper.vm.onInputSearchField).toHaveBeenCalled();
-	// });
+	test('shoud spy onInput method when emit input-search-field', () => {
+		const wrapper = shallowMount(SearchField);
+		wrapper.setMethods({ onInputSearchField: jest.fn() });
+		wrapper.find('textarea').trigger('input');
+		expect(wrapper.vm.onInputSearchField).toHaveBeenCalled();
+	});
 });

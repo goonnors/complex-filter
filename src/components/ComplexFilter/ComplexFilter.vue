@@ -3,6 +3,7 @@
         <search-field
             v-click-outside="''"
             class="search-field"
+            :value="query"
             @focus-search-field="onFocusSearchField"
             @input-search-field="onInputSearchField"
         />
@@ -44,7 +45,8 @@
         data: () => ({
 			tableHeaders: [],
 			tableItems: [],
-            showDynamicOptions: false
+            showDynamicOptions: false,
+            query: ''
         }),
         computed: {
 			dynamicOptions() {
@@ -60,16 +62,18 @@
 				this.showDynamicOptions = true;
             },
 			onInputSearchField(query) {
+				this.query = query;
 				this.tableItems = this.filterTableItems(query);
             },
             filterTableItems(query='') {
-				return this.tableItems.filter((item) => ~item.entity.toLowerCase().search(query.toLowerCase()));
+				return initialData.data.filter((item) => ~item.entity.toLowerCase().search(query.toLowerCase()));
             },
 			hideDynamicOptions() {
 				this.showDynamicOptions = false;
             },
-			onDynamicOptionClick() {
-				console.log('click');
+			onDynamicOptionClick(itemEntity) {
+				this.query += itemEntity;
+				this.tableItems = this.tableItems.filter(item => item.entity !== itemEntity);
             }
         }
     }
