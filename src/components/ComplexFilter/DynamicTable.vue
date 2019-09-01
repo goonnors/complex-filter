@@ -1,11 +1,10 @@
 <template>
-    <table>
-        <tbody>
-            <tr v-for="item in items" :key="item.value">
-                <td>{{ item }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <div>
+        <v-data-table
+            :headers="headers"
+            :items="items"
+        />
+    </div>
 </template>
 
 <script>

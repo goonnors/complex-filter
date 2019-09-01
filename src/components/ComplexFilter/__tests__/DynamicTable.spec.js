@@ -1,11 +1,25 @@
-import { shallowMount } from "@vue/test-utils";
+import Vue from 'vue'
+import Vuetify from 'vuetify'
+
 import DynamicTable from '../DynamicTable';
 import initialData from "@/assets/static/initialData";
 
+import { shallowMount } from "@vue/test-utils";
+
+Vue.use(Vuetify);
+
 describe('DynamicTable.vue', () => {
+	
+	const mountFunction = options => {
+		return shallowMount(DynamicTable, {
+			Vue,
+			...options,
+		})
+	};
+	
 	test('should init data', () => {
 		const { headers, data: items } = initialData;
-		const wrapper = shallowMount(DynamicTable, {
+		const wrapper = mountFunction({
 			propsData: { items, headers }
 		});
 		expect(wrapper.vm.items).toBe(items);
@@ -14,9 +28,11 @@ describe('DynamicTable.vue', () => {
 	
 	test('should render data', () => {
 		const { headers, data: items } = initialData;
-		const wrapper = shallowMount(DynamicTable, {
+		const wrapper = mountFunction({
 			propsData: { items, headers }
 		});
-		expect(wrapper.findAll('table td')).toHaveLength(items.length);
+		const dataTableVm = wrapper.find('v-data-table-stub').vm;
+		expect(dataTableVm.headers).toBe(headers);
+		expect(dataTableVm.items).toBe(items);
 	});
 });

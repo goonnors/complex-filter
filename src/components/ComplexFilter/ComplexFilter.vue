@@ -2,7 +2,7 @@
     <div v-click-outside="hideDynamicOptions">
         <search-field class="search-field" @focus-search-field="onFocusSearchField" />
         <dynamic-options class="dynamic-options" v-if="showDynamicOptions" />
-        <dynamic-table :headers="headers" :items="items" />
+        <dynamic-table :headers="tableHeaders" :items="tableItems" />
     </div>
 </template>
 
@@ -31,13 +31,13 @@
 	export default {
 		components: { SearchField, DynamicOptions, DynamicTable },
         data: () => ({
-            headers: [],
-            items: [],
+			tableHeaders: [],
+			tableItems: [],
             showDynamicOptions: false
         }),
         mounted() {
-			this.headers = initialData.headers;
-			this.items = initialData.data;
+			this.tableHeaders = initialData.headers;
+			this.tableItems = initialData.data;
         },
         methods: {
 			onFocusSearchField() {

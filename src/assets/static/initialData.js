@@ -11,12 +11,12 @@ export default {
 	],
 	data: [
 		{
-			name: 'Desserts',
-			value: '100g serving'
+			entity: 'Desserts',
+			description: '100g serving'
 		},
 		{
-			name: 'Vegetables',
-			value: 'for 1 kg'
+			entity: 'Vegetables',
+			description: 'for 1 kg'
 		}
 	]
 }
