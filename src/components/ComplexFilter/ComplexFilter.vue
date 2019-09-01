@@ -8,13 +8,14 @@
         <dynamic-options
             v-if="showDynamicOptions"
             v-click-outside="'search-field'"
-            :items="tableHeaders"
+            :items="dynamicOptions"
         />
         <dynamic-table :headers="tableHeaders" :items="tableItems" />
     </div>
 </template>
 
 <script>
+    import _ from 'lodash';
 	import initialData from "@/assets/static/initialData";
     import SearchField from './SearchField';
     import DynamicOptions from './DynamicOptions';
@@ -43,6 +44,11 @@
 			tableItems: [],
             showDynamicOptions: false
         }),
+        computed: {
+			dynamicOptions() {
+				return _.map(this.tableItems, 'entity');
+            }
+        },
         mounted() {
 			this.tableHeaders = initialData.headers;
 			this.tableItems = initialData.data;

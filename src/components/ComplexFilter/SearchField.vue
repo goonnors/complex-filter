@@ -4,13 +4,17 @@
         id="search-field"
         rows="1"
         @focus="$emit('focus-search-field')"
-    >
-        ping
-    </textarea>
+        @input="onInput"
+    ></textarea>
 </template>
 
 <script>
     export default {
-        name: 'SearchField'
+        name: 'SearchField',
+        methods: {
+			onInput() {
+				console.log('onInput');
+            }
+        }
     }
 </script>
