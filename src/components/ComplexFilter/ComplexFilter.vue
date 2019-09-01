@@ -4,11 +4,13 @@
             v-click-outside="''"
             class="search-field"
             @focus-search-field="onFocusSearchField"
+            @input-search-field="onInputSearchField"
         />
         <dynamic-options
             v-if="showDynamicOptions"
             v-click-outside="'search-field'"
             :items="dynamicOptions"
+            @dynamic-option-click="onDynamicOptionClick"
         />
         <dynamic-table :headers="tableHeaders" :items="tableItems" />
     </div>
@@ -57,8 +59,17 @@
 			onFocusSearchField() {
 				this.showDynamicOptions = true;
             },
+			onInputSearchField(query) {
+				this.tableItems = this.filterTableItems(query);
+            },
+            filterTableItems(query='') {
+				return this.tableItems.filter((item) => ~item.entity.toLowerCase().search(query.toLowerCase()));
+            },
 			hideDynamicOptions() {
 				this.showDynamicOptions = false;
+            },
+			onDynamicOptionClick() {
+				console.log('click');
             }
         }
     }

@@ -1,19 +1,23 @@
 <template>
     <textarea
+        v-model="query"
         name="search-field"
         id="search-field"
         rows="1"
         @focus="$emit('focus-search-field')"
-        @input="onInput"
+        @input="onInputSearchField"
     ></textarea>
 </template>
 
 <script>
     export default {
         name: 'SearchField',
+        data: () => ({
+            query: ''
+        }),
         methods: {
-			onInput() {
-				console.log('onInput');
+			onInputSearchField() {
+				this.$emit('input-search-field', this.query);
             }
         }
     }

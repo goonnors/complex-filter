@@ -30,4 +30,27 @@ describe('ComplexFilter.vue', () => {
 		wrapper.find(SearchField).vm.$emit('focus-search-field');
 		expect(wrapper.find(DynamicOptions).exists()).toBeTruthy();
 	});
+	
+	// test('should handle query when input textarea', () => {
+	// 	const wrapper = shallowMount(ComplexFilter);
+	// 	jest.spyOn(wrapper.vm, 'onInputSearchField');
+	// 	wrapper.find(SearchField).vm.$emit('input-search-field');
+	// 	expect(wrapper.vm.onInputSearchField).toHaveBeenCalled();
+	// });
+	
+	test('should modify items', () => {
+		const wrapper = shallowMount(ComplexFilter);
+		const tableItems = wrapper.vm.tableItems;
+		expect(tableItems).not.toHaveLength(0);
+		wrapper.vm.onInputSearchField(tableItems[0].entity);
+		expect(wrapper.vm.tableItems).toHaveLength(1);
+	});
+	
+	test('should handle query when input textarea', () => {
+		const wrapper = shallowMount(ComplexFilter);
+		wrapper.setMethods({ onDynamicOptionClick: jest.fn() });
+		wrapper.find(SearchField).vm.$emit('focus-search-field');
+		wrapper.find(DynamicOptions).vm.$emit('dynamic-option-click');
+		expect(wrapper.vm.onDynamicOptionClick).toHaveBeenCalled();
+	});
 });
