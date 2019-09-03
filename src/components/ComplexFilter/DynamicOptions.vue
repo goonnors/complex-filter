@@ -11,13 +11,13 @@
 </template>
 
 <script>
-    export default {
-        name: 'DynamicOptions',
-        props: ['items'],
-        methods: {
-            onItemClick(item) {
-                this.$emit('dynamic-option-click', item);
-            }
-        }
+  export default {
+    name: 'DynamicOptions',
+    props: ['items'],
+    methods: {
+      onItemClick(item) {
+        this.$emit('dynamic-option-click', item);
+      }
     }
+  }
 </script>
