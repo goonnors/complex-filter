@@ -4,7 +4,7 @@
       v-click-outside="''"
       :value="query"
       :query-is-valid="queryIsValid"
-      :key="searchFieldKey"
+      :key="stateKey"
       @focus-search-field="onFocusSearchField"
       @input-search-field="onInputSearchField"
     />
@@ -12,6 +12,7 @@
       v-if="showDynamicOptions"
       v-click-outside="'search-field'"
       :items="dynamicOptions"
+      :key="stateKey"
       @dynamic-option-click="onDynamicOptionClick"
     />
     <dynamic-table
@@ -54,7 +55,7 @@ export default {
     dynamicOptions: [],
     filterState: FilterState.initialState,
     loading: false,
-    searchFieldKey: 0,
+    stateKey: 0,
     showDynamicOptions: false,
     query: "",
     queryIsValid: null,
@@ -104,13 +105,13 @@ export default {
     updateQuery(option) {
       this.query += option;
 
-      if (!FilterState.isEntitySelection(this.filterState)) {
-        this.query += " ";
-      } else {
+      if (FilterState.isEntitySelection(this.filterState)) {
         this.query += ": ";
         this.tableItems = this.tableItems.filter(
           item => item[this.dynamicKey] !== option
         );
+      } else {
+        this.query += " ";
       }
     },
     handleQuery(query) {
@@ -134,6 +135,7 @@ export default {
       this.showDynamicOptions = false;
     },
     onDynamicOptionClick(option) {
+      debugger;
       this.excludeDynamicOption(option);
       this.updateQuery(option);
       this.updateState(this.filterState);
@@ -167,6 +169,9 @@ export default {
       if (FilterState.needsUpdateData(state)) {
         await this.fetchData();
       }
+    },
+    getData() {
+      //
     },
     async fetchData() {
       this.loading = true;

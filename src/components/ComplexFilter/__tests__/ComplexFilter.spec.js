@@ -26,6 +26,13 @@ describe("ComplexFilter.vue", () => {
     wrapper.vm.updateState(wrapper.vm.filterState);
   };
 
+  const clickOnDynamicOption = (wrapper, option) => {
+    wrapper.vm.fetchData = () => {
+      wrapper.vm.applyData(mockData);
+    };
+    wrapper.vm.onDynamicOptionClick(option);
+  };
+
   test("should contains SearchField and not contains DynamicOptions", () => {
     const wrapper = shallowMount(ComplexFilter);
     expect(wrapper.find(SearchField).exists()).toBeTruthy();
@@ -113,10 +120,7 @@ describe("ComplexFilter.vue", () => {
 
     // click on dynamic option
     const option = wrapper.vm.dynamicOptions[0];
-    wrapper.vm.fetchData = () => {
-      wrapper.vm.applyData(mockData);
-    };
-    wrapper.vm.onDynamicOptionClick(option);
+    clickOnDynamicOption(wrapper, option);
 
     // state in the second step
     expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
@@ -156,12 +160,17 @@ describe("ComplexFilter.vue", () => {
    */
 
   test('init column-selection step', () => {
-    // const wrapper = createWrapper();
-    // expect(FilterState.isEntitySelection(wrapper.vm.filterState)).toBeTruthy();
-    //
-    // // state in the first step
-    // expect(wrapper.vm.query).toBe(""); // query
-    // expect(wrapper.vm.dynamicOptions).toEqual(_.map(initialData.data, "entity")); // dynamicOptions
+    const wrapper = createWrapper();
+
+    const firstOption = wrapper.vm.dynamicOptions[0];
+    clickOnDynamicOption(wrapper, firstOption);
+    expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
+
+    const secondOption = wrapper.vm.dynamicOptions[0];
+    clickOnDynamicOption(wrapper, secondOption);
+    expect(FilterState.isOperationInput(wrapper.vm.filterState)).toBeTruthy();
+    expect(wrapper.vm.query).toBe(firstOption + ': ' + secondOption + ' '); // query
+    expect(wrapper.vm.dynamicOptions).toEqual(Operation.getList()); // dynamicOptions
     // expect(wrapper.vm.tableItems).toEqual(initialData.data); // dynamicOptions
     //
     // // transformation magic
