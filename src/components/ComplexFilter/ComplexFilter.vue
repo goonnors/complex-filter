@@ -2,8 +2,9 @@
   <div>
     <search-field
       v-click-outside="''"
-      class="search-field"
       :value="query"
+      :query-is-valid="queryIsValid"
+      :key="searchFieldKey"
       @focus-search-field="onFocusSearchField"
       @input-search-field="onInputSearchField"
     />
@@ -30,13 +31,13 @@ import SearchField from "./SearchField";
 import DynamicOptions from "./DynamicOptions";
 import DynamicTable from "./DynamicTable";
 import FilterState from "./enum/FilterState";
-import Operation from "./enum/Operation"
+import Operation from "./enum/Operation";
 
 Vue.directive("click-outside", {
   bind: function(el, binding, vnode) {
     el.clickOutsideEvent = event => {
       const target = event.target;
-      if (!el.contains(target) && binding.value !== target.className) {
+      if (!el.contains(target) && binding.value !== target.id) {
         vnode.context.hideDynamicOptions();
       }
     };
@@ -53,12 +54,19 @@ export default {
     dynamicOptions: [],
     filterState: FilterState.initialState,
     loading: false,
+    searchFieldKey: 0,
     showDynamicOptions: false,
     query: "",
+    queryIsValid: null,
     tableHeaders: [],
     tableItems: []
   }),
   computed: {
+    items() {
+      return FilterState.isEntitySelection(this.filterState)
+        ? this.tableItems
+        : this.tableHeaders;
+    },
     dynamicKey() {
       return FilterState.isEntitySelection(this.filterState)
         ? "entity"
@@ -67,42 +75,92 @@ export default {
   },
   mounted() {
     this.updateState(this.filterState);
+    this.debouncedQueryHandler = _.debounce(this.handleQuery, 50);
   },
   methods: {
-    onFocusSearchField() {
-      this.showDynamicOptions = true;
-    },
     onInputSearchField(query) {
-      this.query = query;
-      this.tableItems = this.filterTableItems(query);
+      if (!query) {
+        this.initStep();
+        return;
+      }
+
+      this.validateInput(query);
+      if (this.queryIsValid) {
+        this.debouncedQueryHandler(query);
+      } else {
+        this.dropDynamicOptions();
+      }
     },
-    filterTableItems(query) {
-      return this.tableItems.filter(
-        item =>
-          ~item[this.dynamicKey]
-            .toLowerCase()
-            .search(_.escapeRegExp(query.toLowerCase()))
-      );
+    validateInput(query) {
+      this.filterDynamicOptions(query);
+      this.queryIsValid = !!this.dynamicOptions.length;
     },
-    hideDynamicOptions() {
-      this.showDynamicOptions = false;
-    },
-    onDynamicOptionClick(option) {
-      this.reduceDynamicOptions(option);
-      this.updateQuery(option);
-      this.updateState(this.filterState);
+    queryIsComplete(query) {
+      if (this.dynamicOptions.length === 1) {
+        return this.dynamicOptions[0].toLowerCase() === query.toLowerCase();
+      }
+      return false;
     },
     updateQuery(option) {
       this.query += option;
 
       if (!FilterState.isEntitySelection(this.filterState)) {
-        this.query += ' ';
+        this.query += " ";
       } else {
-        this.query += ': ';
+        this.query += ": ";
         this.tableItems = this.tableItems.filter(
           item => item[this.dynamicKey] !== option
         );
       }
+    },
+    handleQuery(query) {
+      if (this.queryIsComplete(query)) {
+        this.onDynamicOptionClick(query);
+      }
+    },
+
+    initStep() {
+      this.queryIsValid = null;
+      this.tableItems = initialData.data;
+      this.updateDynamicOptions();
+      this.searchFieldKey++;
+    },
+
+    /*** dynamic options ***/
+    onFocusSearchField() {
+      this.showDynamicOptions = true;
+    },
+    hideDynamicOptions() {
+      this.showDynamicOptions = false;
+    },
+    onDynamicOptionClick(option) {
+      this.excludeDynamicOption(option);
+      this.updateQuery(option);
+      this.updateState(this.filterState);
+    },
+    dropDynamicOptions() {
+      this.dynamicOptions = [];
+    },
+    updateDynamicOptions(options) {
+      this.dynamicOptions = options || _.map(this.items, this.dynamicKey);
+    },
+    excludeDynamicOption(option) {
+      this.dynamicOptions = this.dynamicOptions.filter(item => item !== option);
+    },
+    filterDynamicOptions(query) {
+      this.dynamicOptions = _.map(this.items, this.dynamicKey).filter(
+        item => ~item.toLowerCase().search(_.escapeRegExp(query.toLowerCase()))
+      );
+    },
+    /*******/
+
+    filterTableItems(query) {
+      this.tableItems = this.items.filter(
+        item =>
+          ~item[this.dynamicKey]
+            .toLowerCase()
+            .search(_.escapeRegExp(query.toLowerCase()))
+      );
     },
     async updateState(state) {
       this.filterState = FilterState.getNextState(state);
@@ -110,22 +168,15 @@ export default {
         await this.fetchData();
       }
     },
-    updateDynamicOptions() {
-      if (this.filterState === 0 || this.filterState === 1)
-      this.dynamicOptions = FilterState.isEntitySelection(this.filterState)
-        ? _.map(this.tableItems, this.dynamicKey)
-        : _.map(this.tableHeaders, this.dynamicKey);
-    },
-    reduceDynamicOptions(option) {
-      this.dynamicOptions = this.dynamicOptions.filter(
-        item => item !== option
-      );
-    },
     async fetchData() {
       this.loading = true;
       setTimeout(() => {
         this.loading = false;
-        this.applyData(FilterState.isEntitySelection(this.filterState) ? initialData : mockData);
+        this.applyData(
+          FilterState.isEntitySelection(this.filterState)
+            ? initialData
+            : mockData
+        );
       }, 500);
     },
     applyData(data) {
@@ -133,7 +184,7 @@ export default {
       this.tableItems = data.data;
       this.updateDynamicOptions();
       this.showDynamicOptions = true;
-    },
+    }
   }
 };
 </script>

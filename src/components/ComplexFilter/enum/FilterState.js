@@ -9,9 +9,6 @@ const types = Object.freeze({
 
 export default {
   initialState: types.INITIAL_STATE,
-  getStateById(typeId) {
-    //
-  },
   getNextState(state) {
     const nextState = ++state;
     const [type] = Object.entries(types).find(([, value]) => value === nextState);
