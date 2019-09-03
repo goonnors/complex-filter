@@ -5,6 +5,7 @@
       :value="query"
       :query-is-valid="queryIsValid"
       :key="stateKey"
+      ref="searchField"
       @focus-search-field="onFocusSearchField"
       @input-search-field="onInputSearchField"
     />
@@ -12,7 +13,6 @@
       v-if="showDynamicOptions"
       v-click-outside="'search-field'"
       :items="dynamicOptions"
-      :key="stateKey"
       @dynamic-option-click="onDynamicOptionClick"
     />
     <dynamic-table
@@ -58,6 +58,7 @@ export default {
     stateKey: 0,
     showDynamicOptions: false,
     query: "",
+    queryList: [],
     queryIsValid: null,
     tableHeaders: [],
     tableItems: []
@@ -85,6 +86,8 @@ export default {
         return;
       }
 
+      query = _.trimStart(query, this.query);
+
       this.validateInput(query);
       if (this.queryIsValid) {
         this.debouncedQueryHandler(query);
@@ -104,6 +107,7 @@ export default {
     },
     updateQuery(option) {
       this.query += option;
+      this.queryList.push(option);
 
       if (FilterState.isEntitySelection(this.filterState)) {
         this.query += ": ";
@@ -121,10 +125,12 @@ export default {
     },
 
     initStep() {
+      this.query = "";
       this.queryIsValid = null;
       this.tableItems = initialData.data;
       this.updateDynamicOptions();
-      this.searchFieldKey++;
+      this.filterState = FilterState.initialState;
+      this.stateKey++;
     },
 
     /*** dynamic options ***/
@@ -135,7 +141,6 @@ export default {
       this.showDynamicOptions = false;
     },
     onDynamicOptionClick(option) {
-      debugger;
       this.excludeDynamicOption(option);
       this.updateQuery(option);
       this.updateState(this.filterState);
@@ -145,6 +150,9 @@ export default {
     },
     updateDynamicOptions(options) {
       this.dynamicOptions = options || _.map(this.items, this.dynamicKey);
+      setTimeout(() => {
+        this.showDynamicOptions = true;
+      });
     },
     excludeDynamicOption(option) {
       this.dynamicOptions = this.dynamicOptions.filter(item => item !== option);
@@ -164,16 +172,21 @@ export default {
             .search(_.escapeRegExp(query.toLowerCase()))
       );
     },
-    async updateState(state) {
+    updateState(state) {
       this.filterState = FilterState.getNextState(state);
       if (FilterState.needsUpdateData(state)) {
-        await this.fetchData();
+        this.fetchData();
+      } else if (FilterState.isOperationInput(this.filterState)) {
+        this.updateDynamicOptions(Operation.getList());
+      } else if (FilterState.isCellValueSelection(this.filterState)) {
+        this.getCellValue();
+        // this.updateDynamicOptions(Operation.getList());
       }
     },
-    getData() {
-      //
+    getCellValue() {
+      debugger;
     },
-    async fetchData() {
+    fetchData() {
       this.loading = true;
       setTimeout(() => {
         this.loading = false;
@@ -188,7 +201,6 @@ export default {
       this.tableHeaders = data.headers;
       this.tableItems = data.data;
       this.updateDynamicOptions();
-      this.showDynamicOptions = true;
     }
   }
 };

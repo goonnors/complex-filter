@@ -159,7 +159,7 @@ describe("ComplexFilter.vue", () => {
    * modified: query, dynamicOptions, tableItems
    */
 
-  test('init column-selection step', () => {
+  test('init operation-input step', () => {
     const wrapper = createWrapper();
 
     const firstOption = wrapper.vm.dynamicOptions[0];
@@ -171,17 +171,6 @@ describe("ComplexFilter.vue", () => {
     expect(FilterState.isOperationInput(wrapper.vm.filterState)).toBeTruthy();
     expect(wrapper.vm.query).toBe(firstOption + ': ' + secondOption + ' '); // query
     expect(wrapper.vm.dynamicOptions).toEqual(Operation.getList()); // dynamicOptions
-    // expect(wrapper.vm.tableItems).toEqual(initialData.data); // dynamicOptions
-    //
-    // // transformation magic
-    // const option = wrapper.vm.dynamicOptions[0];
-    // changeStateFromEntityToColumn(wrapper, option);
-    //
-    // // state in the second step
-    // expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
-    // expect(wrapper.vm.query).toContain(option + ": "); // query
-    // expect(wrapper.vm.dynamicOptions).not.toContain(option); // dynamicOptions
-    // expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
+    expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
   });
-
 });

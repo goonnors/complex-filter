@@ -11,8 +11,11 @@ export default {
   initialState: types.INITIAL_STATE,
   getNextState(state) {
     const nextState = ++state;
-    const [type] = Object.entries(types).find(([, value]) => value === nextState);
-    return types[type];
+    return types[this.getStateById(nextState)];
+  },
+  getStateById(stateId) {
+    const [type] = Object.entries(types).find(([, value]) => value === stateId);
+    return type;
   },
   needsUpdateData(state) {
     return this.isInitialState(state) || this.isEntitySelection(state);
@@ -28,5 +31,8 @@ export default {
   },
   isOperationInput(state) {
     return types.OPERATION_INPUT === state;
+  },
+  isCellValueSelection(state) {
+    return types.CELL_VALUE_SELECTION === state;
   }
 };
