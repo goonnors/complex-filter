@@ -16,7 +16,7 @@ describe("ComplexFilter.vue", () => {
     return wrapper;
   };
 
-  const changeStateFromEntityToColumn = (wrapper, option) => {
+  const changeState = (wrapper, option) => {
     wrapper.vm.fetchData = () => {
       wrapper.vm.applyData(mockData);
     };
@@ -71,7 +71,7 @@ describe("ComplexFilter.vue", () => {
     const tableItems = wrapper.vm.tableItems;
     expect(tableItems).not.toHaveLength(0);
     wrapper.vm.onInputSearchField(tableItems[0].entity);
-    wrapper.vm.debouncedQueryHandler.flush();
+    wrapper.vm.debouncedClick.flush();
     expect(wrapper.vm.tableItems).toHaveLength(1);
   });
 
@@ -100,7 +100,7 @@ describe("ComplexFilter.vue", () => {
 
     // transformation magic
     const option = wrapper.vm.dynamicOptions[0];
-    changeStateFromEntityToColumn(wrapper, option);
+    changeState(wrapper, option);
 
     // state in the second step
     expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
@@ -144,7 +144,7 @@ describe("ComplexFilter.vue", () => {
       wrapper.vm.applyData(mockData);
     };
     wrapper.vm.onInputSearchField(option);
-    wrapper.vm.debouncedQueryHandler.flush();
+    wrapper.vm.debouncedClick.flush();
 
     // state in the second step
     expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
@@ -172,5 +172,32 @@ describe("ComplexFilter.vue", () => {
     expect(wrapper.vm.query).toBe(firstOption + ': ' + secondOption + ' '); // query
     expect(wrapper.vm.dynamicOptions).toEqual(Operation.getList()); // dynamicOptions
     expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
+  });
+
+  test('transition to the third stage by complete-valid input', () => {
+    let option;
+    const wrapper = createWrapper();
+
+    option = wrapper.vm.dynamicOptions[0];
+    changeState(wrapper, option);
+
+    option = wrapper.vm.dynamicOptions[0];
+    changeState(wrapper, option);
+
+    option = wrapper.vm.dynamicOptions[0];
+    // input complete query
+    // wrapper.vm.fetchData = () => {
+    //   wrapper.vm.applyData(mockData);
+    // };
+    wrapper.vm.onInputSearchField(option);
+    wrapper.vm.debouncedClick.flush();
+    console.log(FilterState.getStateById(wrapper.vm.filterState));
+    console.log(option, wrapper.vm.query, wrapper.vm.queryList);
+
+    // // state in the second step
+    // expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
+    // expect(wrapper.vm.query).toContain(option + ": "); // query
+    // expect(wrapper.vm.dynamicOptions).not.toContain(option); // dynamicOptions
+    // expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
   });
 });

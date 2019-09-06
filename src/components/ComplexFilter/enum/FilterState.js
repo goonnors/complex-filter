@@ -10,8 +10,7 @@ const types = Object.freeze({
 export default {
   initialState: types.INITIAL_STATE,
   getNextState(state) {
-    const nextState = ++state;
-    return types[this.getStateById(nextState)];
+    return state === 4 ? 1 : ++state;
   },
   getStateById(stateId) {
     const [type] = Object.entries(types).find(([, value]) => value === stateId);
@@ -34,5 +33,8 @@ export default {
   },
   isCellValueSelection(state) {
     return types.CELL_VALUE_SELECTION === state;
+  },
+  isKeywordInput(state) {
+    return types.KEYWORD_INPUT === state;
   }
 };
