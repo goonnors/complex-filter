@@ -21,14 +21,14 @@ describe('DynamicOptions.vue', () => {
 		const wrapper = amountWithDynamicOptions();
 		expect(wrapper.findAll('ul li').length).toBe(dynamicOptions.length);
 	});
-	
+
 	test('should handle click on item', () => {
 		const wrapper = amountWithDynamicOptions();
 		wrapper.setMethods({ onItemClick: jest.fn() });
 		wrapper.find('ul li').trigger('click');
 		expect(wrapper.vm.onItemClick).toBeCalled();
 	});
-	
+
 	test('should emit dynamic-option-click when click on item', () => {
 		const wrapper = amountWithDynamicOptions();
 		wrapper.find('ul li').trigger('click');

@@ -12,6 +12,9 @@ export default {
   getNextState(state) {
     return state === 4 ? 1 : ++state;
   },
+  getPreviousState(state) {
+    return --state;
+  },
   getStateById(stateId) {
     const [type] = Object.entries(types).find(([, value]) => value === stateId);
     return type;

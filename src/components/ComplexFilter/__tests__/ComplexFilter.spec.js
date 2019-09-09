@@ -17,17 +17,17 @@ describe("ComplexFilter.vue", () => {
   };
 
   const changeState = (wrapper, option) => {
-    wrapper.vm.fetchData = () => {
+    wrapper.vm.fetchAndApplyData = () => {
       wrapper.vm.applyData(mockData);
     };
-    wrapper.vm.dynamicOptions = _.map(mockData.headers, "value");
-    wrapper.vm.excludeDynamicOption(option);
-    wrapper.vm.updateQuery(option);
-    wrapper.vm.updateState(wrapper.vm.filterState);
+    wrapper.vm.dOptions.items = _.map(mockData.headers, "value");
+    wrapper.vm.dOptions.exclude(option);
+    wrapper.vm.query.update(option, wrapper.vm.state);
+    wrapper.vm.updateStateAndData(wrapper.vm.state);
   };
 
   const clickOnDynamicOption = (wrapper, option) => {
-    wrapper.vm.fetchData = () => {
+    wrapper.vm.fetchAndApplyData = () => {
       wrapper.vm.applyData(mockData);
     };
     wrapper.vm.onDynamicOptionClick(option);
@@ -43,13 +43,13 @@ describe("ComplexFilter.vue", () => {
   test("should show DynamicOptions on focus search field", () => {
     const wrapper = shallowMount(ComplexFilter);
     expect(wrapper.find(DynamicOptions).exists()).toBeFalsy();
-    wrapper.vm.onFocusSearchField();
+    wrapper.vm.dOptions.isVisible = true;
     expect(wrapper.find(DynamicOptions).exists()).toBeTruthy();
   });
 
   test("hide dynamic options", () => {
     const wrapper = shallowMount(ComplexFilter);
-    wrapper.vm.hideDynamicOptions();
+    wrapper.vm.dOptions.isVisible = false;
     expect(wrapper.find(DynamicOptions).exists()).toBeFalsy();
   });
 
@@ -68,11 +68,11 @@ describe("ComplexFilter.vue", () => {
 
   test("should modify tableItems on input event", async () => {
     const wrapper = createWrapper();
-    const tableItems = wrapper.vm.tableItems;
-    expect(tableItems).not.toHaveLength(0);
-    wrapper.vm.onInputSearchField(tableItems[0].entity);
+    const table = wrapper.vm.table;
+    expect(table.items).not.toHaveLength(0);
+    wrapper.vm.onInputSearchField(table.items[0].entity);
     wrapper.vm.debouncedClick.flush();
-    expect(wrapper.vm.tableItems).toHaveLength(1);
+    expect(wrapper.vm.table.items).toHaveLength(1);
   });
 
   test("should handle query when input textarea", () => {
@@ -83,121 +83,132 @@ describe("ComplexFilter.vue", () => {
     expect(wrapper.vm.onDynamicOptionClick).toHaveBeenCalled();
   });
 
-  /**
-   * step 2: Column selection
-   * to check: click, input (valid/invalid, complete/incomplete)
-   * modified: query, dynamicOptions, tableItems
-   */
-
-  test('init column-selection step', () => {
-    const wrapper = createWrapper();
-    expect(FilterState.isEntitySelection(wrapper.vm.filterState)).toBeTruthy();
-
-    // state in the first step
-    expect(wrapper.vm.query).toBe(""); // query
-    expect(wrapper.vm.dynamicOptions).toEqual(_.map(initialData.data, "entity")); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(initialData.data); // dynamicOptions
-
-    // transformation magic
-    const option = wrapper.vm.dynamicOptions[0];
-    changeState(wrapper, option);
-
-    // state in the second step
-    expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
-    expect(wrapper.vm.query).toContain(option + ": "); // query
-    expect(wrapper.vm.dynamicOptions).not.toContain(option); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
-  });
-
-  test('transition to the second stage by click', () => {
-    const wrapper = createWrapper();
-    expect(FilterState.isEntitySelection(wrapper.vm.filterState)).toBeTruthy();
-
-    // state in the first step
-    expect(wrapper.vm.query).toBe(""); // query
-    expect(wrapper.vm.dynamicOptions).toEqual(_.map(initialData.data, "entity")); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(initialData.data); // dynamicOptions
-
-    // click on dynamic option
-    const option = wrapper.vm.dynamicOptions[0];
-    clickOnDynamicOption(wrapper, option);
-
-    // state in the second step
-    expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
-    expect(wrapper.vm.query).toContain(option + ": "); // query
-    expect(wrapper.vm.dynamicOptions).not.toContain(option); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
-  });
-
-  test('transition to the second stage by complete-valid input', () => {
-    const wrapper = createWrapper();
-    expect(FilterState.isEntitySelection(wrapper.vm.filterState)).toBeTruthy();
-
-    // state in the first step
-    expect(wrapper.vm.query).toBe(""); // query
-    expect(wrapper.vm.dynamicOptions).toEqual(_.map(initialData.data, "entity")); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(initialData.data); // dynamicOptions
-
-    // input complete query
-    const option = wrapper.vm.dynamicOptions[0];
-    wrapper.vm.fetchData = () => {
-      wrapper.vm.applyData(mockData);
-    };
-    wrapper.vm.onInputSearchField(option);
-    wrapper.vm.debouncedClick.flush();
-
-    // state in the second step
-    expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
-    expect(wrapper.vm.query).toContain(option + ": "); // query
-    expect(wrapper.vm.dynamicOptions).not.toContain(option); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
-  });
-
-  /**
-   * step 3: Operation input
-   * to check: click, input (valid/invalid, complete/incomplete)
-   * modified: query, dynamicOptions, tableItems
-   */
-
-  test('init operation-input step', () => {
-    const wrapper = createWrapper();
-
-    const firstOption = wrapper.vm.dynamicOptions[0];
-    clickOnDynamicOption(wrapper, firstOption);
-    expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
-
-    const secondOption = wrapper.vm.dynamicOptions[0];
-    clickOnDynamicOption(wrapper, secondOption);
-    expect(FilterState.isOperationInput(wrapper.vm.filterState)).toBeTruthy();
-    expect(wrapper.vm.query).toBe(firstOption + ': ' + secondOption + ' '); // query
-    expect(wrapper.vm.dynamicOptions).toEqual(Operation.getList()); // dynamicOptions
-    expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
-  });
-
-  test('transition to the third stage by complete-valid input', () => {
-    let option;
-    const wrapper = createWrapper();
-
-    option = wrapper.vm.dynamicOptions[0];
-    changeState(wrapper, option);
-
-    option = wrapper.vm.dynamicOptions[0];
-    changeState(wrapper, option);
-
-    option = wrapper.vm.dynamicOptions[0];
-    // input complete query
-    // wrapper.vm.fetchData = () => {
-    //   wrapper.vm.applyData(mockData);
-    // };
-    wrapper.vm.onInputSearchField(option);
-    wrapper.vm.debouncedClick.flush();
-    console.log(FilterState.getStateById(wrapper.vm.filterState));
-    console.log(option, wrapper.vm.query, wrapper.vm.queryList);
-
-    // // state in the second step
-    // expect(FilterState.isColumnSelection(wrapper.vm.filterState)).toBeTruthy();
-    // expect(wrapper.vm.query).toContain(option + ": "); // query
-    // expect(wrapper.vm.dynamicOptions).not.toContain(option); // dynamicOptions
-    // expect(wrapper.vm.tableItems).toEqual(mockData.data); // dynamicOptions
-  });
+//   /**
+//    * step 2: Column selection
+//    * to check: click, input (valid/invalid, complete/incomplete)
+//    * modified: query, dOptions.items, tableItems
+//    */
+//
+//   test('init column-selection step', () => {
+//     const wrapper = createWrapper();
+//     expect(FilterState.isEntitySelection(wrapper.vm.state)).toBeTruthy();
+//
+//     // state in the first step
+//     expect(wrapper.vm.query.line).toBe(""); // query
+//     expect(wrapper.vm.dOptions.items).toEqual(_.map(initialData.data, "entity")); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(initialData.data); // dOptions.items
+//
+//     // transformation magic
+//     const option = wrapper.vm.dOptions.items[0];
+//     changeState(wrapper, option);
+//
+//     // state in the second step
+//     expect(FilterState.isColumnSelection(wrapper.vm.state)).toBeTruthy();
+//     expect(wrapper.vm.query.line).toContain(option + ": "); // query
+//     expect(wrapper.vm.dOptions.items).not.toContain(option); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(mockData.data); // dOptions.items
+//   });
+//
+//   test('transition to the second stage by click', () => {
+//     const wrapper = createWrapper();
+//     expect(FilterState.isEntitySelection(wrapper.vm.state)).toBeTruthy();
+//
+//     // state in the first step
+//     expect(wrapper.vm.query.line).toBe(""); // query
+//     expect(wrapper.vm.dOptions.items).toEqual(_.map(initialData.data, "entity")); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(initialData.data); // dOptions.items
+//
+//     // click on dynamic option
+//     const option = wrapper.vm.dOptions.items[0];
+//     clickOnDynamicOption(wrapper, option);
+//
+//     // state in the second step
+//     expect(FilterState.isColumnSelection(wrapper.vm.state)).toBeTruthy();
+//     expect(wrapper.vm.query.line).toContain(option + ": "); // query
+//     expect(wrapper.vm.dOptions.items).not.toContain(option); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(mockData.data); // dOptions.items
+//   });
+//
+//   test('transition to the second stage by complete-valid input', () => {
+//     const wrapper = createWrapper();
+//     expect(FilterState.isEntitySelection(wrapper.vm.state)).toBeTruthy();
+//
+//     // state in the first step
+//     expect(wrapper.vm.query.line).toBe(""); // query
+//     expect(wrapper.vm.dOptions.items).toEqual(_.map(initialData.data, "entity")); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(initialData.data); // dOptions.items
+//
+//     // input complete query
+//     const option = wrapper.vm.dOptions.items[0];
+//     wrapper.vm.fetchAndApplyData = () => {
+//       wrapper.vm.applyData(mockData);
+//     };
+//     wrapper.vm.onInputSearchField(option);
+//     wrapper.vm.debouncedClick.flush();
+//
+//     // state in the second step
+//     expect(FilterState.isColumnSelection(wrapper.vm.state)).toBeTruthy();
+//     expect(wrapper.vm.query.line).toContain(option + ": "); // query
+//     expect(wrapper.vm.dOptions.items).not.toContain(option); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(mockData.data); // dOptions.items
+//   });
+//
+//   /**
+//    * step 3: Operation input
+//    * to check: click, input (valid/invalid, complete/incomplete)
+//    * modified: query, dOptions.items, tableItems
+//    */
+//
+//   test('init operation-input step', () => {
+//     const wrapper = createWrapper();
+//
+//     const firstOption = wrapper.vm.dOptions.items[0];
+//     clickOnDynamicOption(wrapper, firstOption);
+//     expect(FilterState.isColumnSelection(wrapper.vm.state)).toBeTruthy();
+//
+//     const secondOption = wrapper.vm.dOptions.items[0];
+//     clickOnDynamicOption(wrapper, secondOption);
+//     expect(FilterState.isOperationInput(wrapper.vm.state)).toBeTruthy();
+//     expect(wrapper.vm.query.line).toBe(firstOption + ': ' + secondOption + ' '); // query
+//     expect(wrapper.vm.dOptions.items).toEqual(Operation.getList()); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(mockData.data); // dOptions.items
+//   });
+//
+//   test('transition to the third stage by complete/valid input', () => {
+//     // to select-entity state
+//     const wrapper = createWrapper();
+//
+//     // to select-column state
+//     const firstOption = wrapper.vm.dOptions.items[0];
+//     changeState(wrapper, firstOption);
+//
+//     const secondOption = wrapper.vm.dOptions.items[0];
+//     wrapper.vm.onInputSearchField(secondOption);
+//     wrapper.vm.debouncedClick.flush();
+//
+//     expect(FilterState.isOperationInput(wrapper.vm.state)).toBeTruthy();
+//     expect(wrapper.vm.query.line).toBe(firstOption + ': ' + secondOption + ' '); // query
+//     expect(wrapper.vm.dOptions.items).toEqual(Operation.getList()); // dOptions.items
+//     expect(wrapper.vm.table.items).toEqual(mockData.data); // dOptions.items
+//   });
+//
+//   test('downgrade state', () => {
+//     const wrapper = createWrapper(); // to select-entity state
+//     changeState(wrapper, wrapper.vm.dOptions.items[0]); // to select-column state
+//     changeState(wrapper, wrapper.vm.dOptions.items[0]); // to operation-input state
+//
+//     expect(FilterState.isOperationInput(wrapper.vm.state)).toBeTruthy();
+//     wrapper.vm.downgradeState();
+//     expect(FilterState.isColumnSelection(wrapper.vm.state)).toBeTruthy();
+//   });
+//
+//   // test('parse new query', () => {
+//   //   const wrapper = createWrapper();
+//   //   wrapper.find(SearchField).vm.$emit("input-search-field", "Desserts: calories != 237 AND name = Frozen Yogurt ");
+//   //   wrapper.vm.debouncedClick.flush();
+//   //   // jest.spyOn(wrapper.vm, 'parseQuery');
+//   //   // wrapper.vm.parseQuery = jest.fn();
+//   //   // expect(wrapper.vm.parseQuery).toBeCalled();
+//   //   // console.log(wrapper.vm.inputIsValid);
+//   // });
 });

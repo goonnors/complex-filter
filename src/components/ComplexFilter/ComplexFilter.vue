@@ -2,22 +2,21 @@
   <div>
     <search-field
       v-click-outside="''"
-      :value="query"
+      :value="query.line"
       :query-is-valid="inputIsValid"
-      :key="stateKey"
       ref="searchField"
-      @focus-search-field="onFocusSearchField"
+      @focus-search-field="dOptions.isVisible = true"
       @input-search-field="onInputSearchField"
     />
     <dynamic-options
-      v-if="showDynamicOptions"
+      v-if="dOptions.isVisible"
       v-click-outside="'search-field'"
-      :items="dynamicOptions"
+      :items="dOptions.items"
       @dynamic-option-click="onDynamicOptionClick"
     />
     <dynamic-table
-      :headers="tableHeaders"
-      :items="tableItems"
+      :headers="table.headers"
+      :items="table.items"
       :loading="loading"
     />
   </div>
@@ -34,13 +33,15 @@ import DynamicTable from "./DynamicTable";
 import FilterState from "./enum/FilterState";
 import Operation from "./enum/Operation";
 import Keyword from "./enum/Keyword";
+import OptionsController from "./utils/OptionsController"
+import QueryController from "./utils/QueryController";
 
 Vue.directive("click-outside", {
   bind: function(el, binding, vnode) {
     el.clickOutsideEvent = event => {
       const target = event.target;
       if (!el.contains(target) && binding.value !== target.id) {
-        vnode.context.hideDynamicOptions();
+        vnode.context.dOptions.isVisible = false;
       }
     };
     document.documentElement.addEventListener("click", el.clickOutsideEvent);
@@ -53,174 +54,115 @@ Vue.directive("click-outside", {
 export default {
   components: { SearchField, DynamicOptions, DynamicTable },
   data: () => ({
-    dynamicOptions: [],
-    filterState: FilterState.initialState,
+    dOptions: new OptionsController(),
+    state: FilterState.initialState,
     loading: false,
-    stateKey: 0,
-    showDynamicOptions: false,
-    query: "",
-    queryList: [],
+    query: new QueryController(),
     inputIsValid: null,
-    tableHeaders: [],
-    tableItems: []
+    table: []
   }),
   computed: {
-    items() {
-      return FilterState.isEntitySelection(this.filterState)
-        ? this.tableItems
-        : this.tableHeaders;
-    },
-    dynamicKey() {
-      return FilterState.isEntitySelection(this.filterState)
-        ? "entity"
-        : "value";
+    tableData() {
+      if (FilterState.isEntitySelection(this.state)) {
+        return _.map(this.table.items, 'entity');
+      }
+      return _.map(this.table.items, 'value');
     }
   },
   mounted() {
-    this.updateState(this.filterState);
+    this.updateStateAndData(this.state);
     this.debouncedClick = _.debounce(this.onDynamicOptionClick, 50);
   },
   methods: {
-    onInputSearchField(query) {
-      if (!query) {
-        this.initStep();
+    onInputSearchField(input) {
+      if (!input) {
+        this.resetFilter();
         return;
       }
 
-      // TODO сделать обработку в любом месте строки
-      // TODO обработка удаления символов
-
-      const lastChars = _.trimStart(query, this.query);
-      this.inputIsValid = this.dynamicOptionsContainsChars(lastChars);
+      const lastChars = _.trimStart(input, this.query);
+      this.inputIsValid = this.dOptions.containsWord(lastChars, this.tableData);
 
       if (!this.inputIsValid) {
-        this.dropDynamicOptions();
+        this.dOptions.drop();
         return;
       }
 
-      this.filterDynamicOptions(lastChars);
+      this.dOptions.filter(lastChars, this.state, this.tableData);
 
-      if (this.wordIsComplete(lastChars)) {
+      if (this.dOptions.wordIsComplete(lastChars, this.state)) {
         this.debouncedClick(lastChars);
       }
     },
-    dynamicOptionsContainsChars(chars) {
-      return !!this.dynamicOptions.filter(
-        item => ~item.toLowerCase().search(_.escapeRegExp(chars.toLowerCase()))
-      ).length;
-    },
-    wordIsComplete(word) {
-      if (FilterState.isOperationInput(this.filterState)) {
-        return this.dynamicOptions.find(item => item === word);
-      } else if (this.dynamicOptions.length === 1) {
-        return this.dynamicOptions[0].toLowerCase() === word.toLowerCase();
-      }
-      return false;
-    },
-    updateQuery(option) {
-      this.query += option;
-      this.queryList.push(option);
 
-      if (FilterState.isEntitySelection(this.filterState)) {
-        this.query += ": ";
-        this.tableItems = this.tableItems.filter(
-          item => item[this.dynamicKey] !== option
-        );
-      } else {
-        this.query += " ";
-      }
-    },
-    initStep() {
-      this.query = "";
-      this.inputIsValid = null;
-      this.tableItems = initialData.data;
-      this.updateDynamicOptions();
-      this.filterState = FilterState.initialState;
-      this.stateKey++;
-    },
-
-    /*** dynamic options ***/
-    onFocusSearchField() {
-      this.showDynamicOptions = true;
-    },
-    hideDynamicOptions() {
-      this.showDynamicOptions = false;
-    },
-    onDynamicOptionClick(option) {
-      this.excludeDynamicOption(option);
-      this.updateQuery(option);
-      this.updateState(this.filterState);
-    },
-    dropDynamicOptions() {
-      this.dynamicOptions = [];
-    },
-    updateDynamicOptions(options) {
-      this.dynamicOptions = options || _.map(this.items, this.dynamicKey);
-      setTimeout(() => {
-        this.showDynamicOptions = true;
-      });
-    },
-    excludeDynamicOption(option) {
-      this.dynamicOptions = this.dynamicOptions.filter(item => item !== option);
-    },
-    filterDynamicOptions(option) {
-      if (FilterState.isOperationInput(this.filterState)) {
-        // TODO
-      } else {
-        this.dynamicOptions = _.map(this.items, this.dynamicKey).filter(
-          item =>
-            ~item.toLowerCase().search(_.escapeRegExp(option.toLowerCase()))
-        );
-      }
-    },
-    /*******/
-
-    filterTableItems(query) {
-      this.tableItems = this.items.filter(
-        item =>
-          ~item[this.dynamicKey]
-            .toLowerCase()
-            .search(_.escapeRegExp(query.toLowerCase()))
+    updateTableItems(option) {
+      this.table.items = this.table.items.filter(
+        item => item[this.dynamicKey] !== option
       );
     },
-    updateState(state) {
-      this.filterState = FilterState.getNextState(state);
-      // console.log(FilterState.getStateById(this.filterState), FilterState.needsUpdateData(state));
+
+    resetFilter() {
+      this.state = FilterState.initialState;
+      this.updateStateAndData(this.state);
+    },
+
+    onDynamicOptionClick(option) {
+      this.dOptions.exclude(option);
+      this.query.update(option, this.state);
+      this.updateTableItems(option);
+      this.updateStateAndData(this.state);
+    },
+
+    /*** state ***/
+    updateStateAndData(state) {
+      this.state = FilterState.getNextState(state);
+      // console.log(FilterState.getStateById(this.state), FilterState.needsUpdateData(state));
       if (FilterState.needsUpdateData(state)) {
-        this.fetchData();
-        // debugger;
-      } else if (FilterState.isOperationInput(this.filterState)) {
-        this.freeColumns = this.dynamicOptions;
-        this.updateDynamicOptions(Operation.getList());
-      } else if (FilterState.isCellValueSelection(this.filterState)) {
-        this.updateDynamicOptions(this.getCellValues());
-      } else if (FilterState.isKeywordInput(this.filterState)) {
-        this.updateDynamicOptions(Keyword.getList());
-      } else if (FilterState.isColumnSelection(this.filterState)) {
-        this.updateDynamicOptions(this.freeColumns);
+        this.fetchAndApplyData();
+      } else {
+        const options = this.getDynamicOptionsByState(this.state);
+        this.dOptions.update(options, this.tableData);
       }
     },
+    downgradeState() {
+      this.state = FilterState.getPreviousState(this.state);
+    },
+
+    getDynamicOptionsByState(state) {
+      if (FilterState.isOperationInput(state)) {
+        this.remainingColumns = this.dOptions.items;
+        return Operation.getList();
+      } else if (FilterState.isCellValueSelection(state)) {
+        return this.getCellValues();
+      } else if (FilterState.isKeywordInput(state)) {
+        return Keyword.getList();
+      } else if (FilterState.isColumnSelection(state)) {
+        return this.remainingColumns;
+      }
+    },
+
     getCellValues() {
-      return _.chain(this.tableItems).map(this.getColumn()).uniq().value();
+      const column = this.query.getColumn();
+      return _.chain(this.table.items).map(column).uniq().value();
     },
-    getColumn() {
-      return this.queryList[this.queryList.length-2];
-    },
-    fetchData() {
+
+    async fetchAndApplyData() {
       this.loading = true;
-      setTimeout(() => {
-        this.loading = false;
-        this.applyData(
-          FilterState.isEntitySelection(this.filterState)
-            ? initialData
-            : mockData
-        );
-      }, 500);
+      const data = await this.mockRequest();
+      this.loading = false;
+      this.applyData(data);
     },
     applyData(data) {
-      this.tableHeaders = data.headers;
-      this.tableItems = data.data;
-      this.updateDynamicOptions();
+      this.table = data;
+      this.dOptions.update(null, this.tableData);
+    },
+    mockRequest() {
+      const data = FilterState.isEntitySelection(this.state)
+        ? initialData
+        : mockData;
+      return new Promise(function(resolve) {
+        setTimeout(() => resolve(data), 500);
+      });
     }
   }
 };
