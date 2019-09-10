@@ -59,14 +59,14 @@ export default {
     loading: false,
     query: new QueryController(),
     inputIsValid: null,
-    table: []
+    table: {}
   }),
   computed: {
     tableData() {
       if (FilterState.isEntitySelection(this.state)) {
         return _.map(this.table.items, 'entity');
       }
-      return _.map(this.table.items, 'value');
+      return _.map(this.table.headers, 'value');
     }
   },
   mounted() {
@@ -102,6 +102,7 @@ export default {
     },
 
     resetFilter() {
+      this.query.line = '';
       this.state = FilterState.initialState;
       this.updateStateAndData(this.state);
     },
@@ -153,7 +154,8 @@ export default {
       this.applyData(data);
     },
     applyData(data) {
-      this.table = data;
+      this.table.items = data.data;
+      this.table.headers = data.headers;
       this.dOptions.update(null, this.tableData);
     },
     mockRequest() {

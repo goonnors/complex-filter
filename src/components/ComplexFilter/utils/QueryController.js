@@ -6,6 +6,10 @@ export default class QueryController {
     this.line = line;
   }
 
+  get list() {
+    return _.words(this.line, /[^:\s ]+/g);
+  }
+
   getColumn() {
     return this.list[this.list.length-2];
   }
@@ -21,12 +25,9 @@ export default class QueryController {
     }
   }
 
-  get list() {
-    return _.words(this.line, /[^:\s ]+/g);
-  }
-
   validate() {
-    const rootEntity = this.list[0];
-    console.log(rootEntity);
+    // TODO
+    // const rootEntity = this.list[0];
+    // console.log(rootEntity);
   }
 }

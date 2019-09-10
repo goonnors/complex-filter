@@ -7,6 +7,14 @@ export default class OptionsController {
     this.isVisible = false;
   }
 
+  set isVisible(value) {
+    this._isVisible = value;
+  }
+
+  get isVisible() {
+    return this._isVisible && !!this.items.length;
+  }
+
   wordIsComplete(word, state) {
     if (FilterState.isOperationInput(state)) {
       return this.items.find(item => item === word);
