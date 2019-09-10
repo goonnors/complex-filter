@@ -9,7 +9,7 @@
       @input-search-field="onInputSearchField"
     />
     <dynamic-options
-      v-if="dOptions.isVisible"
+      v-if="dOptions.isVisible && !loading"
       v-click-outside="'search-field'"
       :items="dOptions.items"
       @dynamic-option-click="onDynamicOptionClick"
@@ -25,8 +25,6 @@
 <script>
 import Vue from "vue";
 import _ from "lodash";
-import initialData from "@/assets/static/initialData";
-import mockData from "@/assets/static/mockData";
 import SearchField from "./SearchField";
 import DynamicOptions from "./DynamicOptions";
 import DynamicTable from "./DynamicTable";
@@ -35,6 +33,7 @@ import Operation from "./enum/Operation";
 import Keyword from "./enum/Keyword";
 import OptionsController from "./utils/OptionsController"
 import QueryController from "./utils/QueryController";
+import mockApi from "../../api/mockApi";
 
 Vue.directive("click-outside", {
   bind: function(el, binding, vnode) {
@@ -149,22 +148,18 @@ export default {
 
     async fetchAndApplyData() {
       this.loading = true;
-      const data = await this.mockRequest();
+      const { data } = await this.mockRequest();
       this.loading = false;
       this.applyData(data);
     },
     applyData(data) {
-      this.table.items = data.data;
-      this.table.headers = data.headers;
+      this.table = data;
       this.dOptions.update(null, this.tableData);
     },
     mockRequest() {
-      const data = FilterState.isEntitySelection(this.state)
-        ? initialData
-        : mockData;
-      return new Promise(function(resolve) {
-        setTimeout(() => resolve(data), 500);
-      });
+      return FilterState.isEntitySelection(this.state)
+        ? mockApi.getInitialData()
+        : mockApi.getMockData();
     }
   }
 };
