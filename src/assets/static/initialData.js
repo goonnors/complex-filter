@@ -30,11 +30,11 @@ export default {
           entity: {
             type: "string"
           },
-          value: {
+          description: {
             type: "string"
           }
         },
-        required: ["entity", "value"]
+        required: ["entity", "description"]
       }
     }
   },

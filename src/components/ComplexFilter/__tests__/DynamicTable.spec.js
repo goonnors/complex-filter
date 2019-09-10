@@ -9,25 +9,25 @@ import { shallowMount } from "@vue/test-utils";
 Vue.use(Vuetify);
 
 describe('DynamicTable.vue', () => {
-	
+
 	const mountFunction = options => {
 		return shallowMount(DynamicTable, {
 			Vue,
 			...options,
 		})
 	};
-	
+
 	test('should init data', () => {
-		const { headers, data: items } = initialData;
+		const { data: { headers, items } } = initialData;
 		const wrapper = mountFunction({
 			propsData: { items, headers }
 		});
 		expect(wrapper.vm.items).toBe(items);
 		expect(wrapper.vm.headers).toBe(headers);
 	});
-	
+
 	test('should render data', () => {
-		const { headers, data: items } = initialData;
+		const { data: { headers, items } } = initialData;
 		const wrapper = mountFunction({
 			propsData: { items, headers }
 		});

@@ -66,6 +66,11 @@ export default {
         return _.map(this.table.items, 'entity');
       }
       return _.map(this.table.headers, 'value');
+    },
+    dynamicKey() {
+      return FilterState.isEntitySelection(this.state)
+        ? 'entity'
+        : 'value';
     }
   },
   mounted() {
