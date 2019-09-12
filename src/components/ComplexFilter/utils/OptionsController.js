@@ -30,9 +30,6 @@ export default class OptionsController {
 
   update(options, tableData) {
     this.items = options || tableData;
-    setTimeout(() => {
-      this.isVisible = true;
-    });
   }
 
   exclude(option) {

@@ -1,10 +1,10 @@
 <template>
   <div>
     <search-field
+      ref="searchField"
       v-click-outside="''"
       :value="query.line"
-      :query-is-valid="inputIsValid"
-      ref="searchField"
+      :query-is-valid="query.isValid"
       @focus-search-field="dOptions.isVisible = true"
       @input-search-field="onInputSearchField"
     />
@@ -23,32 +23,32 @@
 </template>
 
 <script>
-import Vue from "vue";
-import _ from "lodash";
-import SearchField from "./SearchField";
-import DynamicOptions from "./DynamicOptions";
-import DynamicTable from "./DynamicTable";
-import FilterState from "./enum/FilterState";
-import Operation from "./enum/Operation";
-import Keyword from "./enum/Keyword";
-import OptionsController from "./utils/OptionsController"
-import QueryController from "./utils/QueryController";
-import mockApi from "../../api/mockApi";
+import Vue from 'vue'
+import _ from 'lodash'
+import mockApi from '../../api/mockApi'
+import SearchField from './SearchField'
+import DynamicOptions from './DynamicOptions'
+import DynamicTable from './DynamicTable'
+import FilterState from './enum/FilterState'
+import Operation from './enum/Operation'
+import Keyword from './enum/Keyword'
+import OptionsController from './utils/OptionsController'
+import QueryController from './utils/QueryController'
 
-Vue.directive("click-outside", {
-  bind: function(el, binding, vnode) {
-    el.clickOutsideEvent = event => {
-      const target = event.target;
+Vue.directive('click-outside', {
+  bind (el, binding, vnode) {
+    el.clickOutsideEvent = (event) => {
+      const target = event.target
       if (!el.contains(target) && binding.value !== target.id) {
-        vnode.context.dOptions.isVisible = false;
+        vnode.context.dOptions.isVisible = false
       }
-    };
-    document.documentElement.addEventListener("click", el.clickOutsideEvent);
+    }
+    document.documentElement.addEventListener('click', el.clickOutsideEvent)
   },
-  unbind: function(el) {
-    document.documentElement.removeEventListener("click", el.clickOutsideEvent);
+  unbind (el) {
+    document.documentElement.removeEventListener('click', el.clickOutsideEvent)
   }
-});
+})
 
 export default {
   components: { SearchField, DynamicOptions, DynamicTable },
@@ -57,115 +57,128 @@ export default {
     state: FilterState.initialState,
     loading: false,
     query: new QueryController(),
-    inputIsValid: null,
     table: {}
   }),
   computed: {
-    tableData() {
+    tableData () {
       if (FilterState.isEntitySelection(this.state)) {
-        return _.map(this.table.items, 'entity');
+        return _.map(this.table.items, 'entity')
       }
-      return _.map(this.table.headers, 'value');
+      return _.map(this.table.headers, 'value')
     },
-    dynamicKey() {
+    dynamicKey () {
       return FilterState.isEntitySelection(this.state)
         ? 'entity'
-        : 'value';
+        : 'value'
     }
   },
-  mounted() {
-    this.updateStateAndData(this.state);
-    this.debouncedClick = _.debounce(this.onDynamicOptionClick, 50);
+  mounted () {
+    this.debouncedClick = _.debounce(this.onDynamicOptionClick, 50)
+    this.resetFilter()
   },
   methods: {
-    onInputSearchField(input) {
+    onInputSearchField (input) {
       if (!input) {
-        this.resetFilter();
-        return;
+        this.resetFilter()
+        return
       }
 
-      const lastChars = _.trimStart(input, this.query);
-      this.inputIsValid = this.dOptions.containsWord(lastChars, this.tableData);
+      const lastChars = _.trimStart(input, this.query)
 
-      if (!this.inputIsValid) {
-        this.dOptions.drop();
-        return;
+      // TODO validate complex query
+      this.query.isValid = this.dOptions.containsWord(lastChars, this.tableData)
+
+      if (!this.query.isValid) {
+        this.dOptions.drop()
+        return
       }
 
-      this.dOptions.filter(lastChars, this.state, this.tableData);
+      this.dOptions.filter(lastChars, this.state, this.tableData)
 
       if (this.dOptions.wordIsComplete(lastChars, this.state)) {
-        this.debouncedClick(lastChars);
+        this.debouncedClick(lastChars)
       }
     },
 
-    updateTableItems(option) {
+    validate (queryList) {
+      // TODO
+    },
+
+    updateTableItems (option) {
       this.table.items = this.table.items.filter(
         item => item[this.dynamicKey] !== option
-      );
+      )
     },
 
-    resetFilter() {
-      this.query.line = '';
-      this.state = FilterState.initialState;
-      this.updateStateAndData(this.state);
+    resetFilter () {
+      this.query.line = ''
+      this.forwardFilter(FilterState.initialState)
     },
 
-    onDynamicOptionClick(option) {
-      this.dOptions.exclude(option);
-      this.query.update(option, this.state);
-      this.updateTableItems(option);
-      this.updateStateAndData(this.state);
+    onDynamicOptionClick (option) {
+      this.dOptions.exclude(option)
+      this.query.addOption(option, this.state)
+      this.updateTableItems(option)
+      this.forwardFilter(this.state)
     },
 
-    /*** state ***/
-    updateStateAndData(state) {
-      this.state = FilterState.getNextState(state);
-      // console.log(FilterState.getStateById(this.state), FilterState.needsUpdateData(state));
-      if (FilterState.needsUpdateData(state)) {
-        this.fetchAndApplyData();
-      } else {
-        const options = this.getDynamicOptionsByState(this.state);
-        this.dOptions.update(options, this.tableData);
-      }
-    },
-    downgradeState() {
-      this.state = FilterState.getPreviousState(this.state);
+    forwardFilter (state) {
+      this.updateState(state)
+      this.updateData(state)
     },
 
-    getDynamicOptionsByState(state) {
+    async updateData (state) {
+      const data = await this.fetchData(state)
+      this.applyData(data)
+      const options = FilterState.needsUpdate(this.state) ? null : this.getDynamicOptionsByState(this.state)
+      this.dOptions.update(options, this.tableData)
+    },
+
+    /** state **/
+    updateState (state) {
+      this.state = FilterState.getNextState(state)
+    },
+    downgradeState () {
+      this.state = FilterState.getPreviousState(this.state)
+    },
+
+    getDynamicOptionsByState (state) {
       if (FilterState.isOperationInput(state)) {
-        this.remainingColumns = this.dOptions.items;
-        return Operation.getList();
+        this.remainingColumns = this.dOptions.items
+        return Operation.getList()
       } else if (FilterState.isCellValueSelection(state)) {
-        return this.getCellValues();
+        return this.getCellValues()
       } else if (FilterState.isKeywordInput(state)) {
-        return Keyword.getList();
+        return Keyword.getList()
       } else if (FilterState.isColumnSelection(state)) {
-        return this.remainingColumns;
+        return this.remainingColumns
       }
     },
 
-    getCellValues() {
-      const column = this.query.getColumn();
-      return _.chain(this.table.items).map(column).uniq().value();
+    getCellValues () {
+      const column = this.query.getColumn()
+      return _.chain(this.table.items).map(column).uniq().value()
     },
 
-    async fetchAndApplyData() {
-      this.loading = true;
-      const { data } = await this.mockRequest();
-      this.loading = false;
-      this.applyData(data);
+    async fetchData (state) {
+      if (!FilterState.needsUpdate(state)) {
+        return null
+      }
+      this.loading = true
+      const { data } = await this.mockRequest(state)
+      this.loading = false
+      return data
     },
-    applyData(data) {
-      this.table = data;
-      this.dOptions.update(null, this.tableData);
+    applyData (data) {
+      if (data) {
+        this.table = data
+      }
     },
-    mockRequest() {
-      return FilterState.isEntitySelection(this.state)
+    mockRequest (state) {
+      return FilterState.isInitialState(state)
         ? mockApi.getInitialData()
-        : mockApi.getMockData();
+        : mockApi.getMockData()
     }
   }
-};
+}
 </script>
