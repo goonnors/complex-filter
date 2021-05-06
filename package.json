@@ -11,7 +11,7 @@
   "dependencies": {
     "core-js": "^2.6.5",
     "lodash": "^4.17.15",
-    "property-expr": "^1.5.1",
+    "property-expr": "^2.0.3",
     "vue": "^2.6.10",
     "vuetify": "^2.0.0",
     "vuex": "^3.0.1"
